@@ -1,7 +1,7 @@
 import os
 import time
 
-from pydantic import Field, PositiveFloat, PositiveInt
+from pydantic import Field, PositiveFloat, PositiveInt, Optional
 from src.config.base_config import BaseConfig
 
 
@@ -28,7 +28,7 @@ class TrainingConfig(BaseConfig):
         description="Learning rate for training.",
     )
 
-    seed: int = Field(
+    seed: Optional[int] = Field(
         default=None,
         description="Seed for random number generators.",
     )

@@ -11,13 +11,13 @@ class Dataset_Scaler:
         pass
     
     def scale_dataset(self, dataset: Dataset):
-        df = self._scale_df(dataset.data)
+        df = self.scale_df(dataset.data)
         dataset.data = df
 
         # Potentially add wandb logging here later
 
-    def _scale_df(self, df: pd.DataFrame):
-        df_scaled = self.scaler.fit_transform(df)
-        # df_scaled = pd.DataFrame(df_scaled, columns=df.columns)
+    def scale_df(self, df: pd.DataFrame):
+        scaled_array = self.scaler.fit_transform(df)
+        df_scaled = pd.DataFrame(scaled_array, columns=df.columns)
         return df_scaled
 

@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class BaseConfig(BaseSettings):

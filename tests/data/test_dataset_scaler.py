@@ -18,6 +18,7 @@ def test_dataset_scaler():
 
     scaler.scale_dataset(dataset)
     assert dataset.data is not None
+    assert type(dataset.data) == pd.DataFrame
     assert dataset.data.shape == original_shape
 
 
