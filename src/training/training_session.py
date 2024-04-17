@@ -1,13 +1,16 @@
 import logging
 import os
 import random
+import pandas as pd
 
 import mlflow
 import numpy as np
 import torch
 from git import Repo
 from src.training.trainer import Trainer
-from src.training.training_config import TrainingConfig
+from src.config.training_config import TrainingConfig
+
+from src.data.plant_traits_dataset import PlantTraitsDataset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +54,9 @@ class TrainingSession:
         os.makedirs(self.config.log_dir, exist_ok=True)
 
     def create_datasets(self):
-        self.dataset = None
+        train_path = "plant_traits_kaggle/data/raw/planttraits2024/train.csv"
+        train_df = pd.read_csv(train_path)
+        self.dataset = PlantTraitsDataset(train_df, stage="train")
 
     def create_dataloaders(self):
         self.train_dataloader = None
