@@ -1,7 +1,7 @@
 
 import pandas as pd
 
-from src.data.dataset_scaler import Dataset_Scaler
+from src.data.helpers.dataset_scaler import Dataset_Scaler
 
 """
 Scale dataset and convert to feather file

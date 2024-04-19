@@ -1,12 +1,12 @@
 
 import pandas as pd
-from src.data.plant_traits_dataset import PlantTraitsDataset
-from src.data.dataset_scaler import Dataset_Scaler
+from src.data.datasets.plant_traits_dataset import PlantTraitsDataset
+from src.data.helpers.dataset_scaler import Dataset_Scaler
 from sklearn.preprocessing import StandardScaler
 
 
 def _get_dataset():
-    train_path = "data/raw/planttraits2024/train.csv"
+    train_path = "data/processed/planttraits2024/train.feather"
     train_df = pd.read_csv(train_path)
     dataset = PlantTraitsDataset(train_df, stage="train")    
     return dataset

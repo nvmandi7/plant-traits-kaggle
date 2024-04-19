@@ -10,7 +10,7 @@ from git import Repo
 from src.training.trainer import Trainer
 from src.config.training_config import TrainingConfig
 
-from src.data.plant_traits_dataset import PlantTraitsDataset
+from src.data.datasets.plant_traits_dataset import PlantTraitsDataset
 
 LOGGER = logging.getLogger(__name__)
 

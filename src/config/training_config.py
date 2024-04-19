@@ -1,7 +1,7 @@
 import os
 import time
 
-from pydantic import Field, PositiveFloat, PositiveInt, Optional
+from pydantic import Field, PositiveFloat, PositiveInt
 from src.config.base_config import BaseConfig
 
 
@@ -11,6 +11,11 @@ class TrainingConfig(BaseConfig):
     data_dir: str = Field(
         default="data/raw/planttraits2024",
         description="Directory containing the training data.",
+    )
+
+    use_precomputed_embeddings: bool = Field(
+        default=False,
+        description="Flag that determines whether to replace images with precomputed embeddings in dataset.",
     )
 
     batch_size: PositiveInt = Field(
@@ -28,7 +33,7 @@ class TrainingConfig(BaseConfig):
         description="Learning rate for training.",
     )
 
-    seed: Optional[int] = Field(
+    seed: int = Field(
         default=None,
         description="Seed for random number generators.",
     )

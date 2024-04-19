@@ -1,10 +1,11 @@
 
-from src.data.plant_traits_dataset import PlantTraitsDataset
+from src.data.datasets.plant_traits_dataset import PlantTraitsDataset
 import pandas as pd
 
 
 def test_init():
-    train_path = "data/raw/planttraits2024/train.csv"
+    # train_path = "data/raw/planttraits2024/train.csv"
+    train_path = "data/processed/planttraits2024/train.feather"
     print("Reading train data from: ", train_path)
 
     train_df = pd.read_csv(train_path)
@@ -16,7 +17,7 @@ def test_init():
 
 
 def test_get_item():
-    train_path = "data/raw/planttraits2024/train.csv"
+    train_path = "data/processed/planttraits2024/train.feather"
     train_df = pd.read_csv(train_path)
     dataset = PlantTraitsDataset(train_df, stage="train")
     print("Dataset length: ", len(dataset))
