@@ -8,7 +8,7 @@ def test_init():
     train_path = "data/processed/planttraits2024/train.feather"
     print("Reading train data from: ", train_path)
 
-    train_df = pd.read_csv(train_path)
+    train_df = pd.read_feather(train_path)
     print("Train data shape: ", train_df.shape)
 
     dataset = PlantTraitsDataset(train_df, stage="train")
@@ -18,7 +18,7 @@ def test_init():
 
 def test_get_item():
     train_path = "data/processed/planttraits2024/train.feather"
-    train_df = pd.read_csv(train_path)
+    train_df = pd.read_feather(train_path)
     dataset = PlantTraitsDataset(train_df, stage="train")
     print("Dataset length: ", len(dataset))
 

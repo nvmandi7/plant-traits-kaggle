@@ -54,12 +54,3 @@ class PlantTraitsDataModule(L.LightningDataModule):
 
     def predict_dataloader(self):
         return DataLoader(self.plant_traits_predict, batch_size=self.batch_size)
-    
-
-    # Transforms - if we start adding many, we can pull into a TransformHolder class
-    @staticmethod
-    def get_base_transform():
-        return transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])

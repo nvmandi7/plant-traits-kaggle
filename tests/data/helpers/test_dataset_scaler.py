@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 
 def _get_dataset():
     train_path = "data/processed/planttraits2024/train.feather"
-    train_df = pd.read_csv(train_path)
+    train_df = pd.read_feather(train_path)
     dataset = PlantTraitsDataset(train_df, stage="train")    
     return dataset
 

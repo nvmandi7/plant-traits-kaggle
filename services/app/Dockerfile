@@ -23,5 +23,5 @@ RUN --mount=type=cache,mode=0777,target=/root/.cache pip install --upgrade pip \
 COPY . .
 
 # Switch to non-root user
-RUN useradd -m appuser && chown -R appuser /workspace
-USER appuser
+# RUN useradd -m appuser && chown -R appuser /workspace
+# USER appuser

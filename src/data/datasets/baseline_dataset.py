@@ -17,6 +17,7 @@ class BaselineDataset(PlantTraitsDataset):
         # Add embeddings columns to the DataFrame
         embeddings_path = f'data/processed/planttraits2024/{stage}_embeddings.feather'
         self.df = self.df.merge(pd.read_feather(embeddings_path), on='id')
+        assert self.df.shape[0] == df.shape[0]
 
         # Drop columns
         self.df = self.df.drop(columns = self.drop_cols, axis=1)

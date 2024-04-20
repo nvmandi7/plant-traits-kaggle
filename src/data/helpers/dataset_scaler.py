@@ -16,8 +16,15 @@ class Dataset_Scaler:
 
         # Potentially add wandb logging here later
 
+    # Scale the numeric columns of df
     def scale_df(self, df: pd.DataFrame):
-        scaled_array = self.scaler.fit_transform(df)
-        df_scaled = pd.DataFrame(scaled_array, columns=df.columns)
-        return df_scaled
+        # Get the numeric columns
+        numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
+        num_df = df[numeric_cols]
 
+        scaled_array = self.scaler.fit_transform(num_df)
+        num_df_scaled = pd.DataFrame(scaled_array, columns=num_df.columns)
+
+        # Replace the numeric columns with the scaled columns
+        df[numeric_cols] = num_df_scaled
+        return df
