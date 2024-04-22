@@ -19,7 +19,6 @@ def test_init():
 def test_get_item():
     train_path = "data/processed/planttraits2024/train.feather"
     train_df = pd.read_feather(train_path)
-    print(train_df.columns)
     dataset = BaselineDataset(train_df, stage="train")
     print("Dataset length: ", len(dataset))
 

@@ -7,13 +7,16 @@ from torch.utils.data import Dataset
 
 class PlantTraitsDataset(Dataset):
     def __init__(self, df, stage="train", transform=None, drop_outliers=False):
-        self._base_init(df, drop_outliers)
+        self._set_common_fields(df, drop_outliers)
         self.transform = transform
 
         # Add image paths to the DataFrame
         image_dir = f'data/raw/planttraits2024/{stage}_images/'
         self.df['image_paths'] = self.df['id'].apply(lambda x: image_dir+str(x)+'.jpeg')
 
+        self._post_init()
+    
+    def _post_init(self):
         # Drop columns
         self.df = self.df.drop(columns = self.drop_cols, axis=1)
 
@@ -46,7 +49,7 @@ class PlantTraitsDataset(Dataset):
 
     # ------- Private methods -------
 
-    def _base_init(self, df, drop_outliers=False):
+    def _set_common_fields(self, df, drop_outliers=False):
         self.df = df
         
         self.target_cols = ['X4_mean', 'X11_mean', 'X18_mean', 'X26_mean', 'X50_mean', 'X3112_mean']
