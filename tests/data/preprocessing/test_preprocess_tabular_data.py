@@ -19,7 +19,6 @@ def test_dtypes():
     assert train_df["id"].dtype == "object"
     print("Number of NaNs: ", train_df.isnull().sum().sum())
 
-
     return
 
 def test_main():
@@ -32,5 +31,8 @@ def test_main():
 
     # No NaNs
     assert train_df.isnull().sum().sum() == 0
+
+    # Assure species column is created
+    assert "species" in train_df.columns
 
     return

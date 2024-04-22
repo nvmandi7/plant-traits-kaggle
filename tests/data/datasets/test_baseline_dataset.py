@@ -24,8 +24,7 @@ def test_get_item():
     print("Dataset length: ", len(dataset))
 
     for i in range(5):
-        img, row, targets = dataset[i]
-        print("Image size: ", img.size)
+        row, targets = dataset[i]
         print("Row size: ", row.shape)
         print("Targets size: ", targets.shape)
         print("\n")
@@ -43,7 +42,7 @@ if __name__ == "__main__":
     print("Dataset length: ", len(dataset))
 
     for i in range(5):
-        img, row, targets = dataset[i]
+        row, targets = dataset[i]
         print("Image size: ", img.size)
         print("Row size: ", row.shape)
         print("Targets size: ", targets.shape)

@@ -90,5 +90,5 @@ def main(data_dir, model_name, embeddings_path):
 if __name__ == "__main__":
     data_dir = "data/raw/planttraits2024/train_images"
     model_name = "convnext"
-    embeddings_path = f"data/processed/planttraits2024/{model_name}_embeddings.feather"
+    embeddings_path = f"data/processed/planttraits2024/{model_name}_train_embeddings.feather"
     main(data_dir, model_name, embeddings_path)

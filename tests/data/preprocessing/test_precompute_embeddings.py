@@ -15,7 +15,7 @@ def test_main():
     data_dir = "tests/fixtures/data/raw/planttraits2024/train_images"
     model_name = "resnet50"
     embeddings_path = "tests/fixtures/data/processed/planttraits2024/train_embeddings.feather"
-    main(data_dir, embeddings_path)
+    main(data_dir, model_name, embeddings_path)
 
     display_embeddings()
     return

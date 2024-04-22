@@ -12,11 +12,11 @@ It outputs row=embeddings+tabular, and labels for plant traits.
 """
 
 class BaselineDataset(PlantTraitsDataset):
-    def __init__(self, df, stage="train", transform=None, drop_outliers=False):
+    def __init__(self, df, stage="train", model='resnet50', drop_outliers=False):
         self._base_init(df, drop_outliers)
 
         # Add embeddings columns to the DataFrame
-        embeddings_path = f'data/processed/planttraits2024/{stage}_embeddings.feather'
+        embeddings_path = f'data/processed/planttraits2024/{model}_{stage}_embeddings.feather'
         self.df = self.df.merge(pd.read_feather(embeddings_path), on='id')
         assert self.df.shape[0] == df.shape[0]
 
