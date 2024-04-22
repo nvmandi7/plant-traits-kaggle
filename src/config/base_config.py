@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 
-from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic import Field, BaseSettings
 
 
 class BaseConfig(BaseSettings):
@@ -9,12 +8,12 @@ class BaseConfig(BaseSettings):
     BaseConfig is the base configuration class for training and inference.
     """
 
-    config_file: str | None = Field(default=None, description="Path to configuration file.")
+    config_file: str = Field(default=None, description="Path to configuration file.")
 
     @classmethod
     def parse_args(cls):
         parser = ArgumentParser()
-        for field in cls.model_fields.values():
+        for field in cls.__fields__.values():
             parser.add_argument(
                 f"--{field.name}",
                 type=field.type_,

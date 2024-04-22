@@ -50,7 +50,7 @@ class PlantTraitsDataset(Dataset):
         self.df = df
         
         self.target_cols = ['X4_mean', 'X11_mean', 'X18_mean', 'X26_mean', 'X50_mean', 'X3112_mean']
-        self.drop_cols = ['id']
+        self.drop_cols = ['id', 'species']
 
         if drop_outliers:
             self.df = self._drop_outliers(self.df)
