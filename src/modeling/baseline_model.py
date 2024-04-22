@@ -3,65 +3,94 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
+from torch.metrics import R2Score
 
 """
-Lightning model that takes in precomputed image embeddings, tabular data, and runs a small MLP
+Lightning model that takes in precomputed image embeddings, tabular data, and runs a small MLP to regress plant traits
+
+By default it expect and input size of 2048 resnet embedding dims + 163 tabular features = 2211
 """
+
 class BaselineModel(L.LightningModule):
-    def __init__(self, image_model_name, table_num_features, intermediate_num_features, num_targets, learning_rate=1e-3):
+    def __init__(self, input_dims=2211, learning_rate=1e-3):
         super(BaselineModel, self).__init__()
 
-        # Image model
-        self.image_model = timm.create_model(image_model_name, pretrained=True, num_classes=0)
-        self.image_model_to_intermediate = torch.nn.Linear(self.image_model.num_features, intermediate_num_features)
-
-        # Define the table model
-        self.table_model = torch.nn.Sequential(
-            torch.nn.Linear(table_num_features, 512),
-            nn.BatchNorm1d(512),  # Batch normalization layer
-            nn.Dropout(0.25),
-            nn.ReLU(),
-            torch.nn.Linear(512, 256),
-            nn.BatchNorm1d(256),  # Batch normalization layer
-            nn.Dropout(0.25),
-            nn.ReLU(),
-            torch.nn.Linear(256, intermediate_num_features)
-        )
-
         # Fully connected layers with dropout and batch normalization
-        self.fc_combined = nn.Sequential(
-            nn.Linear(intermediate_num_features, 512),
-            nn.BatchNorm1d(512),  # Batch normalization layer
-            nn.Dropout(0.5),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),  # Batch normalization layer
-            nn.Dropout(0.5),
-            nn.ReLU(),
-            nn.Linear(256, num_targets),
+        def fc_block(in_dim, out_dim):
+            return nn.Sequential(
+                nn.Linear(in_dim, out_dim),
+                nn.BatchNorm1d(out_dim),
+                nn.Dropout(0.25),
+                nn.ReLU(),
+            )
+            
+        self.mlp = nn.Sequential(
+            fc_block(input_dims, 1024),
+            fc_block(1024, 512),
+            fc_block(512, 256),
+            fc_block(256, 128),
+            fc_block(128, 64),
+            nn.Linear(64, 6)
         )
-
+        
         self.learning_rate = learning_rate
 
         # Metric for tracking R2 score
         self.r2_score = R2Score(num_outputs=6)
 
-    def forward(self, x_image, x_table):
-        x_image = self.image_model(x_image)
-        x_image = self.image_model_to_intermediate(x_image)
-        x_table = self.table_model(x_table)
-        x_combined = (x_image + x_table)/2
-        output = self.fc_combined(x_combined)
+
+    def forward(self, x):
+        output = self.mlp(x)
         return output
     
-    def get_image_intermediate(self, x_image, x_table):
-        x_image = self.image_model(x_image)
-        x_image = self.image_model_to_intermediate(x_image)
-        return x_image
+    # ---------------------
+
+    def training_step(self, batch, batch_idx): #TODO
+        x_image, x_table, y_true = batch
+        y_pred = self(x_image, x_table)
+        loss = F.mse_loss(y_pred, y_true)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log_r2(y_pred, y_true, 'train_r2')
+        return loss
+
+    def validation_step(self, batch, batch_idx): #TODO
+        x_image, x_table, y_true = batch
+        y_pred = self(x_image, x_table)
+        loss = F.mse_loss(y_pred, y_true)
+        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log_r2(y_pred, y_true, 'val_r2')
+        return loss
     
-    def get_table_intermediate(self, x_image, x_table):
-        x_table = self.table_model(x_table)
-        return x_table
+    def _shared_step(self, batch, batch_idx): #TODO
+        x_image, x_table, y_true = batch
+        y_pred = self(x_image, x_table)
+        loss = F.mse_loss(y_pred, y_true)
+        return loss, y_pred, y_true
+
+    def train_epoch_end(self, outputs): #TODO
+        # Average training loss across all batches
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        self.log('avg_train_loss', avg_loss)
+        print(f"Average training loss for epoch: {avg_loss}")
+
+    def validation_epoch_end(self, outputs): #TODO
+        # Average validation loss across all batches
+        avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        self.log('avg_val_loss', avg_val_loss)
+        print(f"Average validation loss for epoch: {avg_val_loss}")
+
+        # Example of simple early stopping logic
+        if avg_val_loss < self.best_val_loss:
+            self.best_val_loss = avg_val_loss
+            self.log('best_val_loss', self.best_val_loss)
+            print("New best model saved.")
+            # Here you might include logic to save the model
+
+    # ---------------------
+
+    def log_r2(self, y_pred, y_true, name):
+        r2 = self.r2_score(y_pred, y_true)
+        self.log(name, r2, on_step=False, on_epoch=True, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
@@ -77,26 +106,6 @@ class BaselineModel(L.LightningModule):
                 'interval': 'step',
             },
         }
-
-    def training_step(self, batch, batch_idx):
-        x_image, x_table, y_true = batch
-        y_pred = self(x_image, x_table)
-        loss = F.mse_loss(y_pred, y_true)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log_r2(y_pred, y_true, 'train_r2')
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        x_image, x_table, y_true = batch
-        y_pred = self(x_image, x_table)
-        loss = F.mse_loss(y_pred, y_true)
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log_r2(y_pred, y_true, 'val_r2')
-        return loss
-
-    def log_r2(self, y_pred, y_true, name):
-        r2 = self.r2_score(y_pred, y_true)
-        self.log(name, r2, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         
     def configure_wandb_logger(self, model_name):
         # Get the current date and time in the specified format

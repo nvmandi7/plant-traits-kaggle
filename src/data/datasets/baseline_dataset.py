@@ -7,7 +7,8 @@ from PIL import Image
 from src.data.datasets.plant_traits_dataset import PlantTraitsDataset
 
 """
-Subclass of PlantTraitsDataset that reads precomputed embeddings rather than images
+Subclass of PlantTraitsDataset that reads precomputed embeddings rather than images.
+It outputs row=embeddings+tabular, and labels for plant traits.
 """
 
 class BaselineDataset(PlantTraitsDataset):

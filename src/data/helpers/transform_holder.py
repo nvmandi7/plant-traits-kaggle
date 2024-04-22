@@ -5,13 +5,6 @@ from albumentations.pytorch import ToTensorV2
 from torchvision import transforms
 
 class TransformHolder:
-
-    @staticmethod
-    def get_base_transform():
-        return transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), #ImageNet normalization
-        ])
     
     @staticmethod
     def get_train_transform():
@@ -31,7 +24,7 @@ class TransformHolder:
     def get_val_transform():
         return A.Compose([
             A.Resize(256, 256),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ToTensorV2(),
         ])
 

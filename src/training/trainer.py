@@ -3,6 +3,23 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
+# Define Trainer configuration
+trainer_config = {
+    'max_epochs': 15,               # Specify the maximum number of epochs
+    'logger': wandb_logger,         # Use WandB logger
+    'precision': '16-mixed',        # Use mixed precision (16-bit)
+#     'accumulate_grad_batches': 2,   # Accumulate gradients over multiple batches (if needed)
+    'check_val_every_n_epoch': 1,   # Validate every epoch
+    'callbacks': [
+        # Add any additional callbacks if needed
+        pl.callbacks.LearningRateMonitor(logging_interval='step'),  # Log learning rate
+        pl.callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
+        pl.callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_loss", mode="min", save_top_k=1)
+    ],
+    'benchmark': True,
+}
+
+
 class Trainer:
     """Trainer is responsible for model training."""
 
