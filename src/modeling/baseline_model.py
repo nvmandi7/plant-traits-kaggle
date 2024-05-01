@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
+
 from torch.metrics import R2Score
 
 """
@@ -38,6 +39,8 @@ class BaselineModel(L.LightningModule):
         # Metric for tracking R2 score
         self.r2_score = R2Score(num_outputs=6)
 
+        self.best_val_loss = float('inf')
+
 
     def forward(self, x):
         output = self.mlp(x)
@@ -45,52 +48,51 @@ class BaselineModel(L.LightningModule):
     
     # ---------------------
 
-    def training_step(self, batch, batch_idx): #TODO
-        x_image, x_table, y_true = batch
-        y_pred = self(x_image, x_table)
-        loss = F.mse_loss(y_pred, y_true)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log_r2(y_pred, y_true, 'train_r2')
-        return loss
+    def _shared_step(self, batch, batch_idx):
+        row, targets = batch
+        preds = self(row)
+        loss = F.mse_loss(preds, targets)
+        return loss, preds, targets
 
-    def validation_step(self, batch, batch_idx): #TODO
-        x_image, x_table, y_true = batch
-        y_pred = self(x_image, x_table)
-        loss = F.mse_loss(y_pred, y_true)
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log_r2(y_pred, y_true, 'val_r2')
-        return loss
+    def _log_r2(self, metric_name, preds, targets):
+        r2 = self.r2_score(preds, targets)
+        self.log(metric_name, r2, on_step=False, on_epoch=True, prog_bar=True, logger=True)
     
-    def _shared_step(self, batch, batch_idx): #TODO
-        x_image, x_table, y_true = batch
-        y_pred = self(x_image, x_table)
-        loss = F.mse_loss(y_pred, y_true)
-        return loss, y_pred, y_true
+    
+    def training_step(self, batch, batch_idx):
+        loss, preds, targets = self._shared_step(batch, batch_idx)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self._log_r2('train_r2', preds, targets)
+        return {'loss': loss, 'preds': preds, 'targets': targets}
 
-    def train_epoch_end(self, outputs): #TODO
-        # Average training loss across all batches
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        self.log('avg_train_loss', avg_loss)
-        print(f"Average training loss for epoch: {avg_loss}")
+    def validation_step(self, batch, batch_idx):
+        loss, preds, targets = self._shared_step(batch, batch_idx)
+        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self._log_r2('val_r2', preds, targets)
+        return {'loss': loss, 'preds': preds, 'targets': targets}
+    
 
-    def validation_epoch_end(self, outputs): #TODO
+
+    def train_epoch_end(self, outputs):
+        # Average training loss and R2 across all batches
+        average_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        self.log('average_train_loss', average_loss)
+        print(f"Average training loss for epoch: {average_loss}")
+
+
+    def validation_epoch_end(self, outputs):
         # Average validation loss across all batches
-        avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        self.log('avg_val_loss', avg_val_loss)
-        print(f"Average validation loss for epoch: {avg_val_loss}")
+        average_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        self.log('average_val_loss', average_loss)
+        print(f"Average validation loss for epoch: {average_loss}")
 
-        # Example of simple early stopping logic
-        if avg_val_loss < self.best_val_loss:
-            self.best_val_loss = avg_val_loss
+        if average_loss < self.best_val_loss:
+            self.best_val_loss = average_loss
             self.log('best_val_loss', self.best_val_loss)
-            print("New best model saved.")
-            # Here you might include logic to save the model
+            print("New best val loss.")
 
-    # ---------------------
+    # ---------------------s
 
-    def log_r2(self, y_pred, y_true, name):
-        r2 = self.r2_score(y_pred, y_true)
-        self.log(name, r2, on_step=False, on_epoch=True, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)

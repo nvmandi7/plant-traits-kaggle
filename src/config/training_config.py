@@ -53,3 +53,9 @@ class TrainingConfig(BaseConfig):
         default=False,
         description="Ignore a dirty git working tree (proceed with caution).",
     )
+
+    # Possible additional args
+    # - min and max epochs
+    # - learning rate scheduler
+    # - early stopping
+    # - model checkpoint dir and params
