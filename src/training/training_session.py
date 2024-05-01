@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import torch
 
-from L import Trainer
+from lightning import Trainer
 from src.config.training_config import TrainingConfig
 from src.data.plant_traits_data_module import PlantTraitsDataModule
 from src.modeling.baseline_model import BaselineModel
@@ -82,6 +82,8 @@ class TrainingSession:
                 # Early stopping
             ],
             'benchmark': True,
+            'fast_dev_run': True,
+            'overfit_batches': 1,
         }
 
         self.trainer = Trainer(config=trainer_config)

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
 
-from torch.metrics import R2Score
+from torchmetrics import R2Score
 
 """
 Lightning model that takes in precomputed image embeddings, tabular data, and runs a small MLP to regress plant traits
