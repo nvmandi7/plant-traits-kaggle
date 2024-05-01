@@ -1,11 +1,17 @@
 
 import os
+import dotenv
 import random
 import pandas as pd
 import numpy as np
 import torch
+import datetime
 
+import lightning as L
 from lightning import Trainer
+from lightning.pytorch import loggers as pl_loggers
+import lightning.pytorch.callbacks as callbacks
+
 from src.config.training_config import TrainingConfig
 from src.data.plant_traits_data_module import PlantTraitsDataModule
 from src.modeling.baseline_model import BaselineModel
@@ -29,9 +35,9 @@ class TrainingSession:
 
     def run(self):
         self.seed_generators()
-        # self.configure_logging()
         self.create_datamodule()
         self.create_model()
+        self.configure_logging()
         self.configure_device()
         self.create_trainer()
         self.trainer.fit(self.model, self.datamodule)
@@ -43,23 +49,34 @@ class TrainingSession:
             torch.manual_seed(self.config.seed)
             torch.cuda.manual_seed_all(self.config.seed)
 
-    # def configure_logging(self):
-    #     mlflow.log_params(vars(self.config))
-    #     mlflow.autolog()
-
-    #     os.makedirs(self.config.log_dir, exist_ok=True)
-
     def create_datamodule(self):
         self.datamodule = PlantTraitsDataModule(self.config)
 
     def create_model(self):
         self.model = BaselineModel()
+        self.model_name = "BaselineModel"
+
+    def configure_logging(self):
+        os.makedirs(self.config.log_dir, exist_ok=True)
+        # Load dotenv
+        dotenv.load_dotenv()
+
+
+        # Create ID as current datetime + random 4-letter ID
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        random_id = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=4))
+        run_name = f"{current_datetime}_{random_id}"
+
+        # Initialize the WandB logger with project name and run name
+        wandb_logger = pl_loggers.wandb.WandbLogger(project="PlantTraits2024", name=run_name, log_model=True)
+        wandb_logger.log_hyperparams({"model_name": self.model_name})
+
+        self.wandb_logger = wandb_logger
 
     def configure_device(self):
         self.config.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
-        # self.model.to(self.device)
 
     # def create_optimizer(self):
     #     # self.optimizer = AdamW(self.model.parameters(), lr=self.config.learning_rate)
@@ -69,16 +86,16 @@ class TrainingSession:
         # Define Trainer configuration (temp here)
         trainer_config = {
             'accelerator': 'gpu',
-            'gpus': 1,
+            'devices': 1,
             'max_epochs': 10,
             'logger': self.wandb_logger,
             'precision': '16-mixed',
             'check_val_every_n_epoch': 1,
             'callbacks': [
                 # Add any additional callbacks if needed
-                L.callbacks.LearningRateMonitor(logging_interval='step'),  # Log learning rate
-                L.callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
-                L.callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_loss", mode="min", save_top_k=1)
+                callbacks.LearningRateMonitor(logging_interval='step'),  # Log learning rate
+                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
+                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_loss", mode="min", save_top_k=1)
                 # Early stopping
             ],
             'benchmark': True,
@@ -86,7 +103,7 @@ class TrainingSession:
             'overfit_batches': 1,
         }
 
-        self.trainer = Trainer(config=trainer_config)
+        self.trainer = Trainer(**trainer_config)
 
 
 def main():

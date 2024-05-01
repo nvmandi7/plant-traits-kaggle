@@ -24,22 +24,20 @@ class BaselineModel(L.LightningModule):
                 nn.Dropout(0.25),
                 nn.ReLU(),
             )
-            
+
         self.mlp = nn.Sequential(
-            fc_block(input_dims, 1024),
-            fc_block(1024, 512),
-            fc_block(512, 256),
-            fc_block(256, 128),
+            fc_block(input_dims, 512),
+            fc_block(512, 128),
             fc_block(128, 64),
             nn.Linear(64, 6)
         )
         
         self.learning_rate = learning_rate
+        self.best_val_loss = float('inf')
 
         # Metric for tracking R2 score
         self.r2_score = R2Score(num_outputs=6)
 
-        self.best_val_loss = float('inf')
 
 
     def forward(self, x):
@@ -80,7 +78,7 @@ class BaselineModel(L.LightningModule):
         print(f"Average training loss for epoch: {average_loss}")
 
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self, outputs):
         # Average validation loss across all batches
         average_loss = torch.stack([x['loss'] for x in outputs]).mean()
         self.log('average_val_loss', average_loss)
@@ -91,7 +89,7 @@ class BaselineModel(L.LightningModule):
             self.log('best_val_loss', self.best_val_loss)
             print("New best val loss.")
 
-    # ---------------------s
+    # ---------------------
 
 
     def configure_optimizers(self):
@@ -109,15 +107,3 @@ class BaselineModel(L.LightningModule):
             },
         }
         
-    def configure_wandb_logger(self, model_name):
-        # Get the current date and time in the specified format
-        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        # Generate a random 4-letter ID
-        random_id = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=4))
-        # Combine date, time, and random ID to form the run name
-        run_name = f"{current_datetime}_{random_id}"
-        # Initialize the WandB logger with project name and run name
-        wandb_logger = pl.loggers.wandb.WandbLogger(project="PlantTraits2024", name=run_name, log_model=True)
-        # Log the model name
-        wandb_logger.log_hyperparams({"model_name": model_name})
-        return wandb_logger
