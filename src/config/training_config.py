@@ -10,12 +10,12 @@ class TrainingConfig(BaseConfig):
     """Training configuration settings."""
 
     data_dir: str = Field(
-        default="data/raw/planttraits2024",
-        description="Directory containing the training data.",
+        default="data/processed/planttraits2024",
+        description="planttraits2024 directory root containing the training tabular data with IDs.",
     )
 
     use_precomputed_embeddings: bool = Field(
-        default=False,
+        default=True,
         description="Flag that determines whether to replace images with precomputed embeddings in dataset.",
     )
 
@@ -25,7 +25,7 @@ class TrainingConfig(BaseConfig):
     )
 
     epochs: PositiveInt = Field(
-        default=10,
+        default=50,
         description="Number of full passes over the training dataset.",
     )
 

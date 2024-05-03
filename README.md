@@ -1,9 +1,31 @@
 # plant-traits-kaggle
 
-Describe the problems addressed in this project and the solution that was built to address that
-problem. This should be a high level summary oriented towards a general audience.
+Helping ecologist generalize models for predicting plant traits to better understand the health of ecosystems.
+
+Code for this Kaggle competition: https://www.kaggle.com/competitions/planttraits2024/overview
+
+For additional notes see this doc: https://docs.google.com/document/d/1YLDUVcI2sjkkCSk9zewKPOpY5vFpeMFmkDEsXBXCNCU/edit
 
 
+
+### Quickstart guide
+To get up and running with the code, follow these steps. Make sure you have Docker installed.
+
+1. `bin/build.sh`
+
+2. Download `planttraits2024.zip` from the Kaggle comp linked above. Unzip it in `data/raw`
+
+3. `bin/preprocess_data.sh` to prepare the data and precompute embeddings
+
+4. For W&B logging, contact Nathan to be added to https://wandb.ai/nathan-mandi/PlantTraits2024. Then, create a `.env` file with your `WANDB_API_KEY`
+
+You are set up! You should now be able to run `bin/train.sh` and other scripts to train models, interact with the code in the repo, etc.
+
+
+
+
+## potluck template readme
+This repo uses Potluck, a machine learning repo template from Kung Fu AI. Here are instructions for use.
 
 ### Requirements
 

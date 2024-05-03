@@ -21,7 +21,7 @@ class BaselineModel(L.LightningModule):
             return nn.Sequential(
                 nn.Linear(in_dim, out_dim),
                 nn.BatchNorm1d(out_dim),
-                nn.Dropout(0.25),
+                nn.Dropout(0.5),
                 nn.ReLU(),
             )
 
@@ -34,10 +34,10 @@ class BaselineModel(L.LightningModule):
         
         self.learning_rate = learning_rate
         self.best_val_loss = float('inf')
-
-        # Metric for tracking R2 score
         self.r2_score = R2Score(num_outputs=6)
 
+        self.training_step_outputs = []
+        self.validation_step_outputs = []
 
 
     def forward(self, x):
@@ -61,26 +61,31 @@ class BaselineModel(L.LightningModule):
         loss, preds, targets = self._shared_step(batch, batch_idx)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self._log_r2('train_r2', preds, targets)
-        return {'loss': loss, 'preds': preds, 'targets': targets}
+        
+        outputs = {'loss': loss, 'preds': preds, 'targets': targets}
+        self.training_step_outputs.append(outputs)
+        return outputs
 
     def validation_step(self, batch, batch_idx):
         loss, preds, targets = self._shared_step(batch, batch_idx)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self._log_r2('val_r2', preds, targets)
-        return {'loss': loss, 'preds': preds, 'targets': targets}
-    
+
+        outputs = {'loss': loss, 'preds': preds, 'targets': targets}
+        self.validation_step_outputs.append(outputs)
+        return outputs
 
 
-    def train_epoch_end(self, outputs):
+    def train_epoch_end(self):
         # Average training loss and R2 across all batches
-        average_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        average_loss = torch.stack([x['loss'] for x in self.training_step_outputs]).mean()
         self.log('average_train_loss', average_loss)
         print(f"Average training loss for epoch: {average_loss}")
 
 
-    def on_validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         # Average validation loss across all batches
-        average_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        average_loss = torch.stack([x['loss'] for x in self.validation_step_outputs]).mean()
         self.log('average_val_loss', average_loss)
         print(f"Average validation loss for epoch: {average_loss}")
 
@@ -88,22 +93,9 @@ class BaselineModel(L.LightningModule):
             self.best_val_loss = average_loss
             self.log('best_val_loss', self.best_val_loss)
             print("New best val loss.")
-
-    # ---------------------
-
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
-        return {
-            'optimizer': optimizer,
-            'lr_scheduler': {
-                'scheduler': torch.optim.lr_scheduler.OneCycleLR(
-                    optimizer,
-                    max_lr=self.learning_rate,
-                    steps_per_epoch=len(train_dataloader),
-                    epochs=self.trainer.max_epochs
-                ),
-                'interval': 'step',
-            },
-        }
         
+    # ---------------------
+            
+    def configure_optimizers(self):
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
+        return self.optimizer

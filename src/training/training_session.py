@@ -1,11 +1,11 @@
 
 import os
-import dotenv
 import random
 import pandas as pd
 import numpy as np
 import torch
 import datetime
+from dotenv import load_dotenv
 
 import lightning as L
 from lightning import Trainer
@@ -24,21 +24,12 @@ class TrainingSession:
     def __init__(self, config):
         self.config = config
 
-    def start_experiment(self):
-        pass
-        # Wandb logger, set hparams
-        # mlflow.set_experiment(self.config.experiment_name)
-        # with mlflow.start_run():
-        #     repo = Repo("/workspace")
-        #     mlflow.set_tag("git_commit_hash", repo.head.object.hexsha)
-        #     self.run()
-
     def run(self):
         self.seed_generators()
+        self.configure_device()
         self.create_datamodule()
         self.create_model()
         self.configure_logging()
-        self.configure_device()
         self.create_trainer()
         self.trainer.fit(self.model, self.datamodule)
 
@@ -49,6 +40,11 @@ class TrainingSession:
             torch.manual_seed(self.config.seed)
             torch.cuda.manual_seed_all(self.config.seed)
 
+    def configure_device(self):
+        self.config.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
+        
     def create_datamodule(self):
         self.datamodule = PlantTraitsDataModule(self.config)
 
@@ -58,9 +54,7 @@ class TrainingSession:
 
     def configure_logging(self):
         os.makedirs(self.config.log_dir, exist_ok=True)
-        # Load dotenv
-        dotenv.load_dotenv()
-
+        load_dotenv()
 
         # Create ID as current datetime + random 4-letter ID
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -73,21 +67,12 @@ class TrainingSession:
 
         self.wandb_logger = wandb_logger
 
-    def configure_device(self):
-        self.config.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
-
-    # def create_optimizer(self):
-    #     # self.optimizer = AdamW(self.model.parameters(), lr=self.config.learning_rate)
-    #     self.optimizer = None
-
     def create_trainer(self):
         # Define Trainer configuration (temp here)
         trainer_config = {
             'accelerator': 'gpu',
             'devices': 1,
-            'max_epochs': 10,
+            'max_epochs': self.config.epochs,
             'logger': self.wandb_logger,
             'precision': '16-mixed',
             'check_val_every_n_epoch': 1,
@@ -95,15 +80,33 @@ class TrainingSession:
                 # Add any additional callbacks if needed
                 callbacks.LearningRateMonitor(logging_interval='step'),  # Log learning rate
                 callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
-                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_loss", mode="min", save_top_k=1)
-                # Early stopping
+                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_loss", mode="min", save_top_k=1),
+                callbacks.EarlyStopping(monitor="val_loss", patience=3, mode="min"),
             ],
             'benchmark': True,
-            'fast_dev_run': True,
-            'overfit_batches': 1,
+            # 'fast_dev_run': True,
+            # 'overfit_batches': 1,
         }
 
         self.trainer = Trainer(**trainer_config)
+
+    # TODO find appropriate way to pass in args for scheduler. 
+    # Potentially pass scheduler into model separate from optimizer?
+    # def create_optimizers(self): 
+    #     self.optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
+    #     self.optimizer_config = {
+    #         'optimizer': self.optimizer,
+    #         'lr_scheduler': {
+    #             'scheduler': torch.optim.lr_scheduler.OneCycleLR(
+    #                 self.optimizer,
+    #                 max_lr=self.learning_rate,
+    #                 steps_per_epoch=len(self.datamodule.train_dataloader()),
+    #                 epochs=self.trainer.max_epochs
+    #             ),
+    #             'interval': 'step',
+    #         },
+    #     }
+    #     return self.optimizer_config
 
 
 def main():

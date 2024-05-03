@@ -10,7 +10,7 @@ class PlantTraitsDataset(Dataset):
         self._set_common_fields(df, drop_outliers)
         self.transform = transform
 
-        # Add image paths to the DataFrame
+        # Add image paths to the DataFrame # TODO fix hardcoded path
         image_dir = f'data/raw/planttraits2024/{stage}_images/'
         self.df['image_paths'] = self.df['id'].apply(lambda x: image_dir+str(x)+'.jpeg')
 

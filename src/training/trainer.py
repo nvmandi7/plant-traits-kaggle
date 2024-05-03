@@ -6,7 +6,7 @@ LOGGER = logging.getLogger(__name__)
 trainer_config = {
     'accelerator': 'gpu',
     'gpus': 1,
-    'max_epochs': 10,               # Specify the maximum number of epochs
+    'max_epochs': 200,               # Specify the maximum number of epochs
     'logger': wandb_logger,         # Use WandB logger
     'precision': '16-mixed',        # Use mixed precision (16-bit)
 #     'accumulate_grad_batches': 2,   # Accumulate gradients over multiple batches (if needed)

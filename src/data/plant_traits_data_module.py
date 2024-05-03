@@ -25,21 +25,25 @@ class PlantTraitsDataModule(L.LightningDataModule):
 
     def setup(self, stage: str):
         if stage == "fit":
-            train_path = Path(self.data_dir) / Path("train.csv")
-            train_df = pd.read_csv(train_path)
-            plant_traits_full = self.dataset_cls(train_df, stage="train", transform=self.transform)
+            train_path = Path(self.data_dir) / Path("train.feather")
+            train_df = pd.read_feather(train_path)
+            if self.dataset_cls == PlantTraitsDataset:
+                plant_traits_full = self.dataset_cls(train_df, stage="train", transform=self.transform)
+            else:
+                plant_traits_full = self.dataset_cls(train_df, stage="train")
+
             self.plant_traits_train, self.plant_traits_val = random_split(
                 plant_traits_full, [50489, 5000], generator=torch.Generator()
             )
 
         if stage == "test":
-            test_path = Path(self.data_dir) / Path("test.csv")
-            test_df = pd.read_csv(test_path)
+            test_path = Path(self.data_dir) / Path("test.feather")
+            test_df = pd.read_feather(test_path)
             self.plant_traits_test = self.dataset_cls(test_df, stage="test")
 
         if stage == "predict":
-            path = Path(self.data_dir) / Path("test.csv")
-            df = pd.read_csv(path)
+            path = Path(self.data_dir) / Path("test.feather")
+            df = pd.read_feather(path)
             self.plant_traits_predict = self.dataset_cls(df, stage="test")
 
 

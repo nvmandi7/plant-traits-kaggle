@@ -50,3 +50,4 @@ mlruns/
 
 data/*
 wandb/*
+models/*
