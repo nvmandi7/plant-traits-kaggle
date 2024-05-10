@@ -15,7 +15,7 @@ class TrainingConfig(BaseConfig):
     )
 
     overfit_test: bool = Field(
-        default=True,
+        default=False,
         description="If true, sanity check model by trying to overfit on just 3 batches (wtih 20x epochs)",
     )
 

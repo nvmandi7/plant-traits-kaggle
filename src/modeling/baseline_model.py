@@ -13,7 +13,7 @@ By default it expect and input size of 2048 resnet embedding dims + 163 tabular 
 """
 
 class BaselineModel(L.LightningModule):
-    def __init__(self, input_dims=2211, output_dims=4, learning_rate=1e-3, scheduler_args=None):
+    def __init__(self, input_dims=2211, output_dims=6, learning_rate=1e-3, scheduler_args=None):
         super(BaselineModel, self).__init__()
 
         # Fully connected layers with dropout and batch normalization
@@ -26,10 +26,10 @@ class BaselineModel(L.LightningModule):
             )
 
         self.mlp = nn.Sequential(
-            fc_block(input_dims, 64),
+            fc_block(input_dims, 256),
             # fc_block(512, 256),
-            # fc_block(256, 64),
-            # fc_block(128, 64),
+            fc_block(256, 128),
+            fc_block(128, 64),
             nn.Linear(64, output_dims)
         )
         

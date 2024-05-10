@@ -35,7 +35,7 @@ class BaselineDataset(PlantTraitsDataset):
         # Split dataset into data and target columns to be used downstream
         self.data = self.df.drop(self.target_cols, axis=1)
         self.targets = self.df[self.target_cols]
-        self.targets = self.df[["X4_mean", "X50_mean", "X11_mean", "X18_mean"]]
+        # self.targets = self.df[["X4_mean", "X50_mean", "X11_mean", "X18_mean"]]
 
 
     def __getitem__(self, idx):
