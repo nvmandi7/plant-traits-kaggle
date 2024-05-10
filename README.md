@@ -21,7 +21,10 @@ To get up and running with the code, follow these steps. Make sure you have Dock
 
 You are set up! You should now be able to run `bin/train.sh` and other scripts to train models, interact with the code in the repo, etc.
 
+### Testing
 
+Most of the modules have tests. Run them with `bin/test.sh` and pass in any args you would pass to `pytest`.
+Ex: `bin/test.sh -s tests/data/datasets/test_baseline_dataset.py`
 
 
 ## potluck template readme

@@ -23,7 +23,8 @@ class BaselineDataset(PlantTraitsDataset):
         embeddings_df["id"] = embeddings_df["id"].astype(np.int64)
 
         self.df = self.df.merge(embeddings_df, on='id')
-        assert self.df.shape[0] == num_rows
+        if drop_outliers == False:
+            assert self.df.shape[0] == num_rows
 
         self._post_init()
     
@@ -34,6 +35,7 @@ class BaselineDataset(PlantTraitsDataset):
         # Split dataset into data and target columns to be used downstream
         self.data = self.df.drop(self.target_cols, axis=1)
         self.targets = self.df[self.target_cols]
+        self.targets = self.df[["X4_mean", "X50_mean", "X11_mean", "X18_mean"]]
 
 
     def __getitem__(self, idx):

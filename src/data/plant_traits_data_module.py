@@ -16,8 +16,10 @@ class PlantTraitsDataModule(L.LightningDataModule):
         super().__init__()
         self.data_dir = config.data_dir
         self.batch_size = config.batch_size
+        self.encoder = config.encoder
         self.transform = TransformHolder.get_train_transform()
         self.dataset_cls = BaselineDataset if config.use_precomputed_embeddings else PlantTraitsDataset
+        self.train_val_split = [0.8, 0.2]
 
     def prepare_data(self):
         # Download, tokenize, preprocess, etc.
@@ -28,12 +30,12 @@ class PlantTraitsDataModule(L.LightningDataModule):
             train_path = Path(self.data_dir) / Path("train.feather")
             train_df = pd.read_feather(train_path)
             if self.dataset_cls == PlantTraitsDataset:
-                plant_traits_full = self.dataset_cls(train_df, stage="train", transform=self.transform)
+                plant_traits_full = self.dataset_cls(train_df, stage="train", transform=self.transform, drop_outliers=True)
             else:
-                plant_traits_full = self.dataset_cls(train_df, stage="train")
+                plant_traits_full = self.dataset_cls(train_df, stage="train", drop_outliers=True)
 
             self.plant_traits_train, self.plant_traits_val = random_split(
-                plant_traits_full, [50489, 5000], generator=torch.Generator()
+                plant_traits_full, self.train_val_split, generator=torch.Generator()
             )
 
         if stage == "test":

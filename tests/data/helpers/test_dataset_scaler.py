@@ -11,6 +11,22 @@ def _get_dataset():
     dataset = PlantTraitsDataset(train_df, stage="train")    
     return dataset
 
+def test_scale_df():
+    trait_columns = ['X4_mean', 'X11_mean', 'X18_mean', 'X50_mean', 'X26_mean', 'X3112_mean']
+    scaler = Dataset_Scaler(scaler_type=StandardScaler, exclude_cols=trait_columns)
+    dataset = _get_dataset()
+    df = dataset.df
+
+    orginal_shape = df.shape
+    og_sd = df.std()[trait_columns]
+
+    scaled_df = scaler.scale_df(df)
+    scaled_sd = scaled_df.std()[trait_columns]
+
+    assert df.shape == scaled_df.shape == orginal_shape
+    for col in trait_columns:
+        assert og_sd[col] == scaled_sd[col]
+
 def test_dataset_scaler():
     scaler = Dataset_Scaler(scaler_type=StandardScaler)
     dataset = _get_dataset()

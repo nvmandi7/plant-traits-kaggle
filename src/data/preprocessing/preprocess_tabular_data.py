@@ -8,10 +8,10 @@ Scale dataset and convert to feather file. All downstream tasks should use the f
 """
 
 def main():
-    scaler = Dataset_Scaler()
     train_path = "data/raw/planttraits2024/train.csv"
     trait_columns = ['X4_mean', 'X11_mean', 'X18_mean', 'X50_mean', 'X26_mean', 'X3112_mean']
     drop_cols = ['X4_sd', 'X11_sd', 'X18_sd', 'X26_sd', 'X50_sd', 'X3112_sd']
+    scaler = Dataset_Scaler(exclude_cols=trait_columns)
 
     # Read csv with id column as string
     train_df = pd.read_csv(train_path, dtype={"id": str})
