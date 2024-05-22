@@ -27,7 +27,7 @@ class PlantTraitsDataModule(L.LightningDataModule):
 
     def setup(self, stage: str):
         if stage == "fit":
-            train_path = Path(self.data_dir) / Path("train.feather")
+            train_path = Path(self.data_dir) / Path("train_log_trans_zscore_targets.feather")
             train_df = pd.read_feather(train_path)
             if self.dataset_cls == PlantTraitsDataset:
                 plant_traits_full = self.dataset_cls(train_df, stage="train", transform=self.transform, drop_outliers=True)
