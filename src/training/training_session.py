@@ -15,6 +15,7 @@ import lightning.pytorch.callbacks as callbacks
 from src.config.training_config import TrainingConfig
 from src.data.plant_traits_data_module import PlantTraitsDataModule
 from src.modeling.baseline_model import BaselineModel
+from src.modeling.plant_traits_model import PlantTraitsModel
 
 
 
@@ -56,7 +57,7 @@ class TrainingSession:
             "epochs"         : self.config.epochs,
         }
 
-        self.model = BaselineModel(learning_rate=self.config.learning_rate, scheduler_args=scheduler_args)
+        self.model = PlantTraitsModel(learning_rate=self.config.learning_rate, scheduler_args=scheduler_args)
         self.model_name = "BaselineModel"
 
     def configure_logging(self, experiment_name=""):
@@ -95,9 +96,9 @@ class TrainingSession:
 
         if self.config.overfit_test == True:
             trainer_config['overfit_batches'] = 3
-        else:
-            es = callbacks.EarlyStopping(monitor="average_val_loss", patience=5, mode="min"),
-            trainer_config['callbacks'].append(es)
+        # else:
+            # es = callbacks.EarlyStopping(monitor="average_val_loss", patience=5, mode="min"),
+            # trainer_config['callbacks'].append(es)
 
         self.trainer = Trainer(**trainer_config)
 

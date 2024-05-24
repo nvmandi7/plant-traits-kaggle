@@ -20,7 +20,7 @@ class TrainingConfig(BaseConfig):
     )
 
     use_precomputed_embeddings: bool = Field(
-        default=True,
+        default=False,
         description="Flag that determines whether to replace images with precomputed embeddings in dataset.",
     )
 
