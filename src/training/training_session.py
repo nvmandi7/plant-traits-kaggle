@@ -89,6 +89,7 @@ class TrainingSession:
                 callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
             ],
             'benchmark': True,
+            # TODO gradient clipping
             # 'fast_dev_run': True,
         }
 
