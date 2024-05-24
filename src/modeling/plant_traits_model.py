@@ -7,14 +7,13 @@ import lightning as L
 from torchmetrics import R2Score
 
 """
-Lightning model that takes in precomputed image embeddings, tabular data, and runs a small MLP to regress plant traits
-
-By default it expect and input size of 2048 resnet embedding dims + 163 tabular features = 2211
+Lightning model that takes in plant images and tabular data.
+It trains a vision encoder on the plant image, a small MLP on tabular data, and then concatenates the two to regress plant traits
 """
 
-class BaselineModel(L.LightningModule):
-    def __init__(self, input_dims=2211, output_dims=6, learning_rate=1e-3, scheduler_args=None):
-        super(BaselineModel, self).__init__()
+class PlantTraitsModel(L.LightningModule):
+    def __init__(self, input_image_dims, output_image_dims=256, input_tabular_dims=163, output_tabular_dims=32, output_final_dims=16, learning_rate=1e-3, scheduler_args=None):
+        super(PlantTraitsModel, self).__init__()
 
         # Fully connected layers with dropout and batch normalization
         def fc_block(in_dim, out_dim):
