@@ -35,7 +35,7 @@ class TrainingConfig(BaseConfig):
     )
 
     epochs: PositiveInt = Field(
-        default=50,
+        default=500,
         description="Number of full passes over the training dataset.",
     )
 
@@ -50,7 +50,7 @@ class TrainingConfig(BaseConfig):
     )
 
     experiment_name: str = Field(
-        default="",
+        default="convnext_base_unfreeze_5.24_dropout_0.25_grad_clip_0.97",
         description="Name of MLFlow experiment that contains MLFlow runs.",
     )
 

@@ -60,6 +60,7 @@ class PlantTraitsDataset(Dataset):
 
     @staticmethod
     def _drop_outliers(df):
+        # TODO reimplement this to just clip outliers of +/- 2 std devs
         df = df[(df['X4_mean'] <0.9206089075) &
                 (df['X11_mean'] < 50.8005308717442) & 
                 (df['X18_mean'] < 28.5236956466667) & 

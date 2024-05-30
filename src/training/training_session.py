@@ -84,10 +84,11 @@ class TrainingSession:
             'logger': self.wandb_logger,
             'precision': '16-mixed',
             'check_val_every_n_epoch': 1,
+            'gradient_clip_val': 0.97,
             'callbacks': [
                 # Add any additional callbacks if needed
                 callbacks.LearningRateMonitor(logging_interval='step'),  # Log learning rate
-                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
+                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1, filename='{self.config.experiment_name}-{epoch}-{val_r2:.2f}'),
             ],
             'benchmark': True,
             # TODO gradient clipping

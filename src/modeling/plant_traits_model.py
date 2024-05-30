@@ -16,7 +16,7 @@ It trains a vision encoder on the plant image, a small MLP on tabular data, and 
 """
 
 class PlantTraitsModel(L.LightningModule):
-    def __init__(self, input_tabular_dims=163, output_tabular_dims=32, output_final_dims=6, learning_rate=1e-3, scheduler_args=None):
+    def __init__(self, learning_rate, input_tabular_dims=163, output_tabular_dims=32, output_final_dims=6, scheduler_args=None):
         super(PlantTraitsModel, self).__init__()
 
         # Fully connected layers with dropout and batch normalization
@@ -28,9 +28,14 @@ class PlantTraitsModel(L.LightningModule):
                 nn.ReLU(),
             )
         
-        # Pretrained convnext encoder
+        # Pretrained convnext encoder, only last stage unfrozen
         self.image_encoder = convnext_base(weights=ConvNeXt_Base_Weights.DEFAULT)
         self.image_encoder.classifier = nn.Identity()
+        for name, param in self.image_encoder.named_parameters():
+            if name.startswith('features.5.24'):
+                break
+            param.requires_grad = False
+
 
         self.tabular_mlp = nn.Sequential(
             fc_block(input_tabular_dims, 128),
