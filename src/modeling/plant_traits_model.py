@@ -73,7 +73,7 @@ class PlantTraitsModel(L.LightningModule):
     def _shared_step(self, batch, batch_idx):
         img, row, targets = batch
         preds = self(img, row)
-        loss = F.mse_loss(preds, targets)
+        loss = F.huber_loss(preds, targets)
         return loss, preds, targets
 
     def _log_r2(self, metric_name, preds, targets):

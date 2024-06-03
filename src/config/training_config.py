@@ -40,7 +40,7 @@ class TrainingConfig(BaseConfig):
     )
 
     learning_rate: PositiveFloat = Field(
-        default=5e-4,
+        default=3e-4,
         description="Learning rate for training.",
     )
 
@@ -50,8 +50,8 @@ class TrainingConfig(BaseConfig):
     )
 
     experiment_name: str = Field(
-        default="convnext_base_unfreeze_5.24_dropout_0.25_grad_clip_0.97",
-        description="Name of MLFlow experiment that contains MLFlow runs.",
+        default="convnext_base_unfreeze_5.24_tune",
+        description="Name of W&B experiment.",
     )
 
     force: bool = Field(

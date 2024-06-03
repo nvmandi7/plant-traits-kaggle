@@ -9,6 +9,7 @@ class PlantTraitsDataset(Dataset):
     def __init__(self, df, stage="train", transform=None, drop_outliers=False):
         self._set_common_fields(df, drop_outliers)
         self.transform = transform
+        self.stage = stage
 
         # Add image paths to the DataFrame # TODO fix hardcoded path
         image_dir = f'data/raw/planttraits2024/{stage}_images/'
@@ -18,12 +19,15 @@ class PlantTraitsDataset(Dataset):
     
     def _post_init(self):
         # Drop columns
-        self.df = self.df.drop(columns = self.drop_cols, axis=1)
+        self.df = self.df.drop(columns = self.drop_cols, axis=1, errors='ignore')
 
         # Split dataset into data, image paths and target columns to be used downstream
-        self.data = self.df.drop(['image_paths'] + self.target_cols, axis=1)
+        self.data = self.df.drop(['image_paths'] + self.target_cols, axis=1, errors='ignore')
         self.image_paths = self.df['image_paths']
-        self.targets = self.df[self.target_cols]
+        if self.stage == "train":
+            self.targets = self.df[self.target_cols]
+        else:
+            self.targets = None
 
 
     def __len__(self):
@@ -40,8 +44,11 @@ class PlantTraitsDataset(Dataset):
             img = self.transform(image = np.asarray(img))['image']
 
         # Get the corresponding row in the DataFrames
-        targets = torch.tensor(self.targets.iloc[idx].values.astype(float), dtype=torch.float32)
         row = torch.tensor(self.data.iloc[idx].values.astype(float), dtype=torch.float32)
+        if self.stage == "train":
+            targets = torch.tensor(self.targets.iloc[idx].values.astype(float), dtype=torch.float32)
+        else:
+            targets = torch.tensor([0], dtype=torch.float32)
 
         return img, row, targets
     
