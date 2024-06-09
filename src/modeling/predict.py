@@ -24,19 +24,28 @@ Preprocess: just scale according to train.csv mu and sigma
 Postprocess: exponentiate if necessary, and unscale
 """
 
-def get_scaler():
-    path = "data/processed/latest_scaler.pkl"
+def get_scaler(name):
+    path = f"data/processed/{name}_scaler.pkl"
     scaler = Dataset_Scaler(exclude_cols=['id'])
     scaler.load_from_pkl(path)
     return scaler
+
+def post_process(exponentiate_targets, predictions_df, scaler):
+    if exponentiate_targets:
+        # First clamp to avoid high magnitude values
+        predictions_df = np.clip(predictions_df, -10, 10)
+        predictions_df = np.expm1(predictions_df)
+    predictions_df = scaler.unscale_df(predictions_df)
+    return predictions_df
 
 def main(exponentiate_targets, model_file, outfile):
 
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     # Preprocess dataset - scale according to train.csv mu and sigma
-    scaler = get_scaler()
+    scaler = get_scaler("latest")
     data_df = pd.read_csv("data/raw/planttraits2024/test.csv", dtype={"id": int})
+    id_col = data_df["id"]
     data_df = scaler.scale_df(data_df, fit=False)
 
     # Set up dataset/loader
@@ -63,12 +72,12 @@ def main(exponentiate_targets, model_file, outfile):
     predictions = torch.cat(predictions).numpy()
     columns = dataset.target_cols
     predictions_df = pd.DataFrame(predictions, columns=columns)
-    predictions_df.to_csv(f"data/outputs/predictions_unprocessed.csv")
+    predictions_df.to_csv(f"data/outputs/predictions_unprocessed.csv", index=False)
 
     # Postprocess predictions - exponentiate if necessary, and unscale
-    if exponentiate_targets:
-        predictions_df = np.exp(predictions_df)
-    predictions_df = scaler.unscale_df(predictions_df)
+    target_scaler = get_scaler("target")
+    predictions_df = post_process(exponentiate_targets, predictions_df, target_scaler)
+    predictions_df["id"] = id_col
 
     # Save predictions
     predictions_df.to_csv(outfile, index=False)
@@ -77,6 +86,6 @@ def main(exponentiate_targets, model_file, outfile):
 if __name__ == "__main__":
     exponentiate_targets = True # Set to True if targets are log transformed
     model_file = "models/self.config.experiment_name=0-epoch=24-val_r2=0.37.ckpt"
-    outfile = f"data/outputs/predictions_{model_file}.csv"
+    outfile = f"data/outputs/predictions_epoch=24-val_r2=0.37.csv"
 
     main(exponentiate_targets, model_file, outfile)

@@ -45,5 +45,6 @@ class Dataset_Scaler:
         return df
 
     def unscale_df(self, df: pd.DataFrame):
-        self.scaler.inverse_transform(df)
-        return df
+        unscaled_array = self.scaler.inverse_transform(df.to_numpy())
+        unscaled_df = pd.DataFrame(unscaled_array, columns=df.columns)
+        return unscaled_df
