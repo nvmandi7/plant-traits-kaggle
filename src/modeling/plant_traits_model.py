@@ -2,19 +2,22 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from torchvision.models import convnext_base
+from torchvision.models.convnext import ConvNeXt_Base_Weights
+
 import lightning as L
 
 from torchmetrics import R2Score
 
 """
-Lightning model that takes in precomputed image embeddings, tabular data, and runs a small MLP to regress plant traits
-
-By default it expect and input size of 2048 resnet embedding dims + 163 tabular features = 2211
+Lightning model that takes in plant images and tabular data.
+It trains a vision encoder on the plant image, a small MLP on tabular data, and then concatenates the two to regress plant traits
 """
 
-class BaselineModel(L.LightningModule):
-    def __init__(self, input_dims=2211, output_dims=6, learning_rate=1e-3, scheduler_args=None):
-        super(BaselineModel, self).__init__()
+class PlantTraitsModel(L.LightningModule):
+    def __init__(self, learning_rate, input_tabular_dims=163, output_tabular_dims=32, output_final_dims=6, scheduler_args=None):
+        super(PlantTraitsModel, self).__init__()
 
         # Fully connected layers with dropout and batch normalization
         def fc_block(in_dim, out_dim):
@@ -24,34 +27,53 @@ class BaselineModel(L.LightningModule):
                 nn.Dropout(0.25),
                 nn.ReLU(),
             )
+        
+        # Pretrained convnext encoder, only last stage unfrozen
+        self.image_encoder = convnext_base(weights=ConvNeXt_Base_Weights.DEFAULT)
+        self.image_encoder.classifier = nn.Identity()
+        for name, param in self.image_encoder.named_parameters():
+            if name.startswith('features.5.24'):
+                break
+            param.requires_grad = False
 
-        self.mlp = nn.Sequential(
-            fc_block(input_dims, 512),
-            # fc_block(512, 256),
+
+        self.tabular_mlp = nn.Sequential(
+            fc_block(input_tabular_dims, 128),
+            fc_block(128, 64),
+            nn.Linear(64, output_tabular_dims)
+        )
+
+        self.combined_mlp = nn.Sequential(
+            fc_block(1024 + output_tabular_dims, 512),
             fc_block(512, 128),
             fc_block(128, 64),
-            nn.Linear(64, output_dims)
+            nn.Linear(64, output_final_dims)
         )
         
+
         self.learning_rate = learning_rate
         # self.scheduler_args = scheduler_args
         self.best_val_loss = float('inf')
-        self.r2_score = R2Score(num_outputs=output_dims)
+        self.r2_score = R2Score(num_outputs=output_final_dims)
 
         self.training_step_outputs = []
         self.validation_step_outputs = []
 
 
-    def forward(self, x):
-        output = self.mlp(x)
+    def forward(self, img, tabular):
+        img_embedding = self.image_encoder(img)
+        tabular_embedding = self.tabular_mlp(tabular)
+        print(img_embedding.shape, tabular_embedding.shape)
+        combined = torch.cat((img_embedding.squeeze(), tabular_embedding.squeeze()), dim=1)
+        output = self.combined_mlp(combined)
         return output
     
     # ---------------------
 
     def _shared_step(self, batch, batch_idx):
-        row, targets = batch
-        preds = self(row)
-        loss = F.mse_loss(preds, targets)
+        img, row, targets = batch
+        preds = self(img, row)
+        loss = F.huber_loss(preds, targets)
         return loss, preds, targets
 
     def _log_r2(self, metric_name, preds, targets):

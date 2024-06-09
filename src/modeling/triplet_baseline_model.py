@@ -4,8 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
 
-from torchmetrics import R2Score, TripletLoss
-
 """
 Lightning model that takes in precomputed image embeddings, tabular data, and runs a small MLP to regress plant traits
 
@@ -21,7 +19,7 @@ class BaselineModel(L.LightningModule):
             return nn.Sequential(
                 nn.Linear(in_dim, out_dim),
                 nn.BatchNorm1d(out_dim),
-                nn.Dropout(0.5),
+                nn.Dropout(0.25),
                 nn.ReLU(),
             )
 
@@ -35,7 +33,7 @@ class BaselineModel(L.LightningModule):
         self.learning_rate = learning_rate
         self.scheduler_args = scheduler_args
         self.best_val_loss = float('inf')
-        self.r2_score = R2Score(num_outputs=6)
+        self.triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2, eps=1e-7)
 
         self.training_step_outputs = []
         self.validation_step_outputs = []
@@ -48,31 +46,24 @@ class BaselineModel(L.LightningModule):
     # ---------------------
 
     def _shared_step(self, batch, batch_idx):
-        row, targets = batch
-        preds = self(row)
-        loss = F.mse_loss(preds, targets)
-        return loss, preds, targets
-
-    def _log_r2(self, metric_name, preds, targets):
-        r2 = self.r2_score(preds, targets)
-        self.log(metric_name, r2, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-    
+        anchor, positive, negative, species = batch
+        pa, pp, pn = self(anchor), self(positive), self(negative)
+        loss = self.triplet_loss(pa, pp, pn)
+        return loss, pa, pp, pn, species
     
     def training_step(self, batch, batch_idx):
-        loss, preds, targets = self._shared_step(batch, batch_idx)
+        loss, pa, pp, pn, species = self._shared_step(batch, batch_idx)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self._log_r2('train_r2', preds, targets)
         
-        outputs = {'loss': loss, 'preds': preds, 'targets': targets}
+        outputs = {'loss': loss,'species': species}
         self.training_step_outputs.append(outputs)
         return outputs
 
     def validation_step(self, batch, batch_idx):
-        loss, preds, targets = self._shared_step(batch, batch_idx)
+        loss, pa, pp, pn, species = self._shared_step(batch, batch_idx)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self._log_r2('val_r2', preds, targets)
 
-        outputs = {'loss': loss, 'preds': preds, 'targets': targets}
+        outputs = {'loss': loss,'species': species}
         self.validation_step_outputs.append(outputs)
         return outputs
 

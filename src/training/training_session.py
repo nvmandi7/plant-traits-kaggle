@@ -11,10 +11,12 @@ import lightning as L
 from lightning import Trainer
 from lightning.pytorch import loggers as pl_loggers
 import lightning.pytorch.callbacks as callbacks
+from lightning.pytorch.tuner.tuning import Tuner
 
 from src.config.training_config import TrainingConfig
 from src.data.plant_traits_data_module import PlantTraitsDataModule
 from src.modeling.baseline_model import BaselineModel
+from src.modeling.plant_traits_model import PlantTraitsModel
 
 
 
@@ -33,7 +35,17 @@ class TrainingSession:
         self.create_model()
         self.configure_logging(self.config.experiment_name)
         self.create_trainer()
-        self.trainer.fit(self.model, self.datamodule)
+
+        tuner = Tuner(self.trainer)
+        lr_finder = tuner.lr_find(self.model, self.datamodule)
+        new_lr = lr_finder.suggestion()
+        self.model.hparams.lr = new_lr  # Update the model's learning rate
+        print(f"Suggested Learning Rate: {new_lr}")
+
+        new_batch_size = tuner.scale_batch_size(self.model, self.datamodule)
+        print(f"Suggested Batch Size: {new_batch_size}")
+
+        # self.trainer.fit(self.model, self.datamodule)
 
     def seed_generators(self):
         if self.config.seed is not None:
@@ -56,7 +68,7 @@ class TrainingSession:
             "epochs"         : self.config.epochs,
         }
 
-        self.model = BaselineModel(learning_rate=self.config.learning_rate, scheduler_args=scheduler_args)
+        self.model = PlantTraitsModel(learning_rate=self.config.learning_rate, scheduler_args=scheduler_args)
         self.model_name = "BaselineModel"
 
     def configure_logging(self, experiment_name=""):
@@ -77,26 +89,29 @@ class TrainingSession:
         # Define Trainer configuration (temp here)
         trainer_config = {
             'accelerator': 'gpu',
-            'devices': 1,
+            'devices': [1],
             'min_epochs': 10,
             'max_epochs': self.config.epochs,
             'logger': self.wandb_logger,
             'precision': '16-mixed',
             'check_val_every_n_epoch': 1,
+            'gradient_clip_val': 0.97,
             'callbacks': [
                 # Add any additional callbacks if needed
                 callbacks.LearningRateMonitor(logging_interval='step'),  # Log learning rate
-                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1),
+                callbacks.ModelCheckpoint(dirpath='./models/',  monitor="val_r2", mode="max", save_top_k=1, filename='{experiment_name}-{epoch}-{val_r2:.2f}'),
             ],
             'benchmark': True,
+            # 'auto_scale_batch_size': 'binsearch',
+            # 'auto_lr_find': True,
             # 'fast_dev_run': True,
         }
 
         if self.config.overfit_test == True:
             trainer_config['overfit_batches'] = 3
-        else:
-            es = callbacks.EarlyStopping(monitor="average_val_loss", patience=5, mode="min"),
-            trainer_config['callbacks'].append(es)
+        # else:
+            # es = callbacks.EarlyStopping(monitor="average_val_loss", patience=5, mode="min"),
+            # trainer_config['callbacks'].append(es)
 
         self.trainer = Trainer(**trainer_config)
 

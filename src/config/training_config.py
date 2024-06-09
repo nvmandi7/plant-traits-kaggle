@@ -20,7 +20,7 @@ class TrainingConfig(BaseConfig):
     )
 
     use_precomputed_embeddings: bool = Field(
-        default=True,
+        default=False,
         description="Flag that determines whether to replace images with precomputed embeddings in dataset.",
     )
 
@@ -35,12 +35,12 @@ class TrainingConfig(BaseConfig):
     )
 
     epochs: PositiveInt = Field(
-        default=50,
+        default=500,
         description="Number of full passes over the training dataset.",
     )
 
     learning_rate: PositiveFloat = Field(
-        default=5e-4,
+        default=3e-4,
         description="Learning rate for training.",
     )
 
@@ -50,8 +50,8 @@ class TrainingConfig(BaseConfig):
     )
 
     experiment_name: str = Field(
-        default="",
-        description="Name of MLFlow experiment that contains MLFlow runs.",
+        default="convnext_base_unfreeze_5.24_tune",
+        description="Name of W&B experiment.",
     )
 
     force: bool = Field(

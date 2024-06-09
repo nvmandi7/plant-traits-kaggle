@@ -62,6 +62,7 @@ def main(data_dir, model_name, embeddings_path):
     # Set up model
     model = choose_model(model_name)
     model.fc = torch.nn.Identity() # Remove the final classification layer to get embeddings
+    # TODO BUG only works for resnet, for convnext it's model.classifier
     model = model.to(device)
     model.eval()
 
